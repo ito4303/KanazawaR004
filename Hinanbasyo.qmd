@@ -1,0 +1,124 @@
+---
+title: "指定緊急避難場所を地図で表示する"
+author: "伊東宏樹"
+format: revealjs
+execute: 
+  echo: true
+code-line-numbers: true
+editor: visual
+---
+
+指定緊急避難場所は、災害の危険から命を守るために緊急的に避難をする場所であり、市町村長により、洪水、崖崩れ・土石流・地滑り、地震、津波、大規模な火事等の災害種別ごとに指定が行われます。（災害対策基本法第49条の４）
+
+指定避難所は災害の危険に伴い避難をしてきた被災者等が一定期間滞在するための施設等であり、市町村長により、災害種別に限らず指定が行われます。（災害対策基本法第49条の７）
+
+## データ
+
+能美市指定緊急避難場所一覧
+
+<https://ckan.opendata.pref.ishikawa.lg.jp/dataset/172111_evacuation_space>
+
+```{r}
+#| label: setup
+
+library(tidyverse)
+library(readxl)
+library(leaflet)
+
+data_dir <- "data"
+data_file <- file.path(data_dir, "172111_evacuation_space.xlsx")
+```
+
+## データ読み込み
+
+```{r}
+#| label: read_data
+
+data <- read_excel(data_file)
+```
+
+## データ確認
+
+```{r}
+#| label: view_data
+
+data
+```
+
+```{r}
+colnames(data)
+```
+
+```{r}
+hinanbasyo <- data |>
+  dplyr::filter(`災害種別_地震` == 1)
+```
+
+```{r}
+nrow(data)
+nrow(hinanbasyo)
+```
+
+## Leaflet
+
+```{r}
+#| label: leaflet
+
+leaflet() |>
+  addTiles() |>
+  setView(lng = 136.553991, lat = 36.446817, zoom = 14) |>
+  addMarkers(lng = ~`経度`, lat = ~`緯度`, data = hinanbasyo)
+```
+
+## ggplot2
+
+```{r}
+nomi <- st_read(file.path(data_dir, "N03-20250101_17_GML",
+                          "N03-20250101_17.geojson")) |>
+  dplyr::filter(N03_004 == "能美市")
+```
+
+```{r}
+ggplot(nomi) +
+  geom_sf() +
+  theme_void()
+```
+
+## ボロノイ分割
+
+<https://qiita.com/ishiijunpei/items/7bad0d3050123662a5b4#ボロノイポリゴンの作成>
+
+```{r}
+library(sf)
+
+data_sf <- hinanbasyo |>
+  dplyr::mutate(lon = `経度`,
+                lat = `緯度`,
+                .keep = "none") |>
+  st_as_sf(coords = c("lon", "lat"),
+           crs = 4326) # WGS84
+vor <- data_sf |>
+  st_transform(crs = st_crs(6675)) |> # 平面直角座標系VII
+  st_union() |>
+  st_voronoi() |>
+  st_collection_extract() |>
+  st_transform(crs = 6668) |> # JGD2011
+  st_intersection(nomi)
+```
+
+ggplot
+
+```{r}
+ggplot() +
+  geom_sf(data = vor) +
+  geom_sf(data = data_sf) +
+  theme_void()
+```
+
+```{r}
+leaflet() |>
+  addTiles() |>
+  setView(lng = 136.553991, lat = 36.446817, zoom = 14) |>
+  addMarkers(lng = ~`経度`, lat = ~`緯度`, data = hinanbasyo) |>
+  addPolylines(data = st_transform(vor, crs = 4326)) # WGS84
+```
