@@ -1,5 +1,5 @@
 ---
-title: "指定緊急避難場所を地図で表示する"
+title: "避難場所を地図で表示する"
 author: "伊東宏樹"
 format: revealjs
 execute: 
@@ -24,6 +24,7 @@ editor: visual
 library(tidyverse)
 library(readxl)
 library(leaflet)
+library(sf)
 
 data_dir <- "data"
 data_file <- file.path(data_dir, "172111_evacuation_space.xlsx")
@@ -121,4 +122,20 @@ leaflet() |>
   setView(lng = 136.553991, lat = 36.446817, zoom = 14) |>
   addMarkers(lng = ~`経度`, lat = ~`緯度`, data = hinanbasyo) |>
   addPolylines(data = st_transform(vor, crs = 4326)) # WGS84
+```
+
+## tmap.mapgl
+
+```{r}
+library(tmap)
+library(tmap.mapgl)
+
+hinanbasyo_sf <- hinanbasyo |>
+  st_as_sf(coords = c("経度", "緯度"), crs = 6668)
+
+tmap_mode("maplibre")
+tm_shape(nomi) +
+  tm_maplibre() +
+  tm_shape(hinanbasyo_sf) +
+  tm_symbols(fill = "red")
 ```
