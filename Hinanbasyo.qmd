@@ -1,41 +1,60 @@
 ---
-title: "避難場所を地図で表示する"
+title: "避難場所がどこか、Rで確認してみよう"
 author: "伊東宏樹"
+date: 2025-11-15
+lang: ja
 format: revealjs
 execute: 
   echo: true
 code-line-numbers: true
+embed-resources: true
 editor: visual
 ---
 
-指定緊急避難場所は、災害の危険から命を守るために緊急的に避難をする場所であり、市町村長により、洪水、崖崩れ・土石流・地滑り、地震、津波、大規模な火事等の災害種別ごとに指定が行われます。（災害対策基本法第49条の４）
+```{r}
+#| label: setup
+#| output: false
 
-指定避難所は災害の危険に伴い避難をしてきた被災者等が一定期間滞在するための施設等であり、市町村長により、災害種別に限らず指定が行われます。（災害対策基本法第49条の７）
+library(tidyverse)
+```
+
+## 自己紹介
+
+伊東宏樹
+
+## この発表の目的
+
+指定緊急避難場所
+
+Rをつかって
+
+マウスなどで移動・拡大縮小ができる地図上に緊急避難場所を配置して、
+
+
+
+## 指定緊急避難場所とは
+
+-   **指定緊急避難場所**: 災害の危険から命を守るために緊急的に避難する場所
+
+    -   土砂災害、洪水、津波、地震等の災害種別ごとに指定が行われる
+
+-   **指定避難所**: 災害が発生した場合に避難をしてきた被災者が一定期間生活するための施設
+
+::: {style="font-size: 80%;"}
+内閣府: [「指定緊急避難場所」と「指定避難所」の違いについて](https://www.bousai.go.jp/taisaku/pdf/hinanjo_02.pdf)
+:::
 
 ## データ
 
-能美市指定緊急避難場所一覧
-
-<https://ckan.opendata.pref.ishikawa.lg.jp/dataset/172111_evacuation_space>
-
-```{r}
-#| label: setup
-
-library(tidyverse)
-library(readxl)
-library(leaflet)
-library(sf)
-
-data_dir <- "data"
-data_file <- file.path(data_dir, "172111_evacuation_space.xlsx")
-```
-
-## データ読み込み
+[金沢市オープンデータポータル](https://catalog-data.city.kanazawa.ishikawa.jp/about)から[石川中央都市圏 指定緊急避難場所一覧](https://catalog-data.city.kanazawa.ishikawa.jp/dataset/ishikawa-central-evacuation-space)のCSVファイルをダウンロード
 
 ```{r}
 #| label: read_data
+#| output: false
 
-data <- read_excel(data_file)
+data_dir <- "data"
+data_file <- "ishikawa-central-evacuation-space.csv"
+data <- read_csv(file.path(data_dir, data_file))
 ```
 
 ## データ確認
@@ -46,96 +65,119 @@ data <- read_excel(data_file)
 data
 ```
 
+## 列の確認
+
 ```{r}
 colnames(data)
 ```
 
+## 地震の緊急避難場所を抽出
+
 ```{r}
-hinanbasyo <- data |>
+earthquake <- data |>
   dplyr::filter(`災害種別_地震` == 1)
 ```
 
+## 数を比較
+
 ```{r}
 nrow(data)
-nrow(hinanbasyo)
+nrow(earthquake)
 ```
 
 ## Leaflet
 
+インタラクティブな地図を作成できる
+
 ```{r}
-#| label: leaflet
+library(leaflet)
+```
+
+## 表示例
+
+```{r}
+#| message: false
+
+leaflet() |>
+  addTiles() # デフォルトでOpenStreetMapを表示
+```
+
+## 金沢駅付近
+
+```{r}
+#| eval: false
+
+# 金沢駅の位置
+lat <- 36.578044
+lng <- 136.648175
 
 leaflet() |>
   addTiles() |>
-  setView(lng = 136.553991, lat = 36.446817, zoom = 14) |>
-  addMarkers(lng = ~`経度`, lat = ~`緯度`, data = hinanbasyo)
+  setView(lng = lng, lat = lat, zoom = 15)
 ```
 
-## ggplot2
+------------------------------------------------------------------------
 
 ```{r}
-nomi <- st_read(file.path(data_dir, "N03-20250101_17_GML",
-                          "N03-20250101_17.geojson")) |>
-  dplyr::filter(N03_004 == "能美市")
-```
+#| echo: false
 
-```{r}
-ggplot(nomi) +
-  geom_sf() +
-  theme_void()
-```
+# 金沢駅の位置
+lat <- 36.578044
+lng <- 136.648175
 
-## ボロノイ分割
-
-<https://qiita.com/ishiijunpei/items/7bad0d3050123662a5b4#ボロノイポリゴンの作成>
-
-```{r}
-library(sf)
-
-data_sf <- hinanbasyo |>
-  dplyr::mutate(lon = `経度`,
-                lat = `緯度`,
-                .keep = "none") |>
-  st_as_sf(coords = c("lon", "lat"),
-           crs = 4326) # WGS84
-vor <- data_sf |>
-  st_transform(crs = st_crs(6675)) |> # 平面直角座標系VII
-  st_union() |>
-  st_voronoi() |>
-  st_collection_extract() |>
-  st_transform(crs = 6668) |> # JGD2011
-  st_intersection(nomi)
-```
-
-ggplot
-
-```{r}
-ggplot() +
-  geom_sf(data = vor) +
-  geom_sf(data = data_sf) +
-  theme_void()
-```
-
-```{r}
 leaflet() |>
   addTiles() |>
-  setView(lng = 136.553991, lat = 36.446817, zoom = 14) |>
-  addMarkers(lng = ~`経度`, lat = ~`緯度`, data = hinanbasyo) |>
-  addPolylines(data = st_transform(vor, crs = 4326)) # WGS84
+  setView(lng = lng, lat = lat, zoom = 15)
 ```
 
-## tmap.mapgl
+## 避難場所のマーカーを追加
 
 ```{r}
-library(tmap)
-library(tmap.mapgl)
-
-hinanbasyo_sf <- hinanbasyo |>
-  st_as_sf(coords = c("経度", "緯度"), crs = 6668)
-
-tmap_mode("maplibre")
-tm_shape(nomi) +
-  tm_maplibre() +
-  tm_shape(hinanbasyo_sf) +
-  tm_symbols(fill = "red")
+#| eval: false
+leaflet() |>
+  addTiles() |>
+  setView(lng = lng, lat = lat, zoom = 15) |>
+  addMarkers(lng = ~`経度`, lat = ~`緯度`,
+             data = earthquake)
 ```
+
+------------------------------------------------------------------------
+
+```{r}
+#| echo: false
+
+leaflet() |>
+  addTiles() |>
+  setView(lng = lng, lat = lat, zoom = 15) |>
+  addMarkers(lng = ~`経度`, lat = ~`緯度`,
+             data = earthquake)
+```
+
+## マーカーに説明を追加
+
+```{r}
+#| eval: false
+leaflet() |>
+  addTiles() |>
+  setView(lng = lng, lat = lat, zoom = 15) |>
+  addMarkers(lng = ~`経度`, lat = ~`緯度`,
+             popup = ~`名称` |> htmltools::htmlEscape(),
+             data = earthquake)
+```
+
+------------------------------------------------------------------------
+
+マーカーをクリックすると、避難場所の名称が表示される
+
+```{r}
+#| echo: false
+
+leaflet() |>
+  addTiles() |>
+  setView(lng = lng, lat = lat, zoom = 15) |>
+  addMarkers(lng = ~`経度`, lat = ~`緯度`,
+             popup = ~`名称` |> htmltools::htmlEscape(),
+             data = earthquake)
+```
+
+## まとめ

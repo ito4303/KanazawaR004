@@ -1,0 +1,235 @@
+---
+title: "避難場所への経路をRで探索してみよう"
+author: "伊東宏樹"
+date: 2025-11-15
+lang: ja
+format: revealjs
+execute: 
+  echo: true
+code-line-numbers: true
+embed-resources: true
+editor: visual
+---
+
+## Data
+
+```{r}
+#| label: setup
+#| output: false
+
+library(tidyverse)
+library(sf)
+
+# Data
+data_dir <- "data"
+data_file <- "ishikawa-central-evacuation-space.csv"
+data <- read_csv(file.path(data_dir, data_file))
+
+# 地震の避難場所
+earthquake <- data |>
+  dplyr::filter(`災害種別_地震` == 1)
+```
+
+<!-- ## ggplot2 -->
+
+<!-- ```{r} -->
+
+<!-- bbox <- st_bbox(c(xmin = lng - 0.0125, ymin = lat - 0.00833, -->
+
+<!--                   xmax = lng + 0.0125, ymax = lat + 0.00833), -->
+
+<!--                 crs = 6668) -->
+
+<!-- rect <- st_as_sfc(bbox) -->
+
+<!-- ``` -->
+
+<!-- ```{r} -->
+
+<!-- data_sf <- earthquake |> -->
+
+<!--   dplyr::mutate(lon = `経度`, -->
+
+<!--                 lat = `緯度`, -->
+
+<!--                 .keep = "none") |> -->
+
+<!--   st_as_sf(coords = c("lon", "lat"), -->
+
+<!--            crs = 6668) |> -->
+
+<!--   st_crop(rect) -->
+
+<!-- ggplot() + -->
+
+<!--   geom_sf(data = rect) + -->
+
+<!--   geom_sf(data = data_sf) + -->
+
+<!--   theme_void() -->
+
+<!-- ``` -->
+
+<!-- ## ボロノイ分割 -->
+
+<!-- <https://qiita.com/ishiijunpei/items/7bad0d3050123662a5b4#ボロノイポリゴンの作成> -->
+
+<!-- ```{r} -->
+
+<!-- library(sf) -->
+
+<!-- vor <- data_sf |> -->
+
+<!--   st_transform(crs = st_crs(6675)) |> # 平面直角座標系VII -->
+
+<!--   st_union() |> -->
+
+<!--   st_voronoi() |> -->
+
+<!--   st_collection_extract() |> -->
+
+<!--   st_transform(crs = 6668) |> # JGD2011 -->
+
+<!--   st_intersection(st_as_sfc(bbox)) -->
+
+<!-- ``` -->
+
+<!-- ggplot -->
+
+<!-- ```{r} -->
+
+<!-- ggplot() + -->
+
+<!--   geom_sf(data = vor) + -->
+
+<!--   geom_sf(data = data_sf) + -->
+
+<!--   theme_void() -->
+
+<!-- ``` -->
+
+<!-- ```{r} -->
+
+<!-- leaflet() |> -->
+
+<!--   addTiles() |> -->
+
+<!--   setView(lng = lng, lat = lat, zoom = 15) |> -->
+
+<!--   addMarkers(lng = ~`経度`, lat = ~`緯度`, data = earthquake) |> -->
+
+<!--   addPolylines(data = st_transform(vor, crs = 4326)) # WGS84 -->
+
+<!-- ``` -->
+
+## 経路探索
+
+地図アプリでよくあるアレ
+
+## OSRM
+
+Dockerから利用
+
+仮想環境のようなもの
+
+
+
+## 経路探索データの作成
+
+OSRM
+
+データのダウンロード
+
+```{sh}
+#| eval: false
+#| echo: true
+
+wget https://download.geofabrik.de/asia/japan/chubu-latest.osm.pbf
+```
+
+データの作成
+
+```{sh}
+#| eval: false
+#| echo: true
+
+docker run -t -v "${PWD}:/data" osrm/osrm-backend osrm-extract \
+  -p /opt/foot.lua /data/chubu-latest.osm.pbf
+docker run -t -v "${PWD}:/data" osrm/osrm-backend osrm-partition \
+  /data/chubu-latest.osrm
+docker run -t -v "${PWD}:/data" osrm/osrm-backend osrm-customize \
+  /data/chubu-latest.osrm
+```
+
+## OSRMサーバーの起動
+
+macOSの場合は、OSRMで標準で使用する5000番ポートがAirPlayレシーバーで使われているという問題があります。なので、システム設定>一般>AirDropとHandoffで、AirPlayレシーバーを切るか、別のポートを使用するようにします。
+
+今回は、AirPlayレシーバーを切っておきました。
+
+```{sh}
+#| eval: false
+#| echo: true
+
+docker run -t -i -p 5000:5000 -v "${PWD}:/data" osrm/osrm-backend osrm-routed \
+  --algorithm mld /data/chubu-latest.osrm
+```
+  
+
+## osrmパッケージ
+
+RからOSRMを利用するためのパッケージ
+
+```{r}
+#| echo: true
+
+library(osrm)
+
+options(osrm.server = "http://localhost:5000/",
+        osrm.profile = "foot")
+```
+
+## tmap.mapgl
+
+```{r}
+#| label: tmap.mapgl
+#| message: false
+
+library(tmap)
+library(tmap.mapgl)
+
+earthquake_sf <- earthquake |>
+  sf::st_as_sf(coords = c("経度", "緯度"), crs = 6668) # JGD2011
+
+tmap_mode("maplibre")
+tm_shape(earthquake_sf) +
+  tm_maplibre() +
+  tm_symbols(fill = "red", fill_alpha = 0.67)
+```
+
+## Route
+
+```{r}
+# 金沢駅の位置
+kanazawa_eki <- c(136.648175, 36.578044)
+kenrokuen <- c(136.662603, 36.562085)
+
+route <- osrmRoute(src = kanazawa_eki, dst = kenrokuen)
+print(route)
+```
+
+```{r}
+
+# 3Dポリゴンデータの取得範囲
+# 経度は±40秒、緯度は±30秒の範囲（おおよそ±1kmに対応）
+xmin <- lon - 0.0125
+ymin <- lat - 0.00833
+xmax <- lon + 0.0125
+ymax <- lat + 0.00833
+
+tm_shape(bbox = c(xmin, ymin, xmax, ymax),
+         crs = 4326) +  # WGS84
+  tm_maplibre(pitch = 60) +
+  tm_shape(route) +
+  tm_lines(col = "red", lwd = 2)
+```

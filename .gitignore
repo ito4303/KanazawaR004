@@ -52,3 +52,7 @@ rsconnect/
 # Data directory
 data/
 
+# Output files
+*_files/
+*.html
+
