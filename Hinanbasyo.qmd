@@ -3,11 +3,20 @@ title: "避難場所がどこか、Rで確認してみよう"
 author: "伊東宏樹"
 date: 2025-11-15
 lang: ja
-format: revealjs
+format:
+  revealjs:
+    theme: [default, custom.scss]
+    code-copy: false
+knitr:
+  opts_chunk: 
+    collapse: true
+    comment: ""
+    prompt: true
 execute: 
   echo: true
 code-line-numbers: true
 embed-resources: true
+slide-number: true
 editor: visual
 ---
 
@@ -20,17 +29,21 @@ library(tidyverse)
 
 ## 自己紹介
 
-伊東宏樹
+-   氏名: 伊東宏樹
 
-## この発表の目的
+-   個人事業主（[伊東生態統計研究室](https://ito4303.sakura.ne.jp/)）
 
-指定緊急避難場所
+    -   データ解析、執筆・翻訳、研修講師などお引き受けいたします。
 
-Rをつかって
+-   1991〜2024年まで森林総合研究所勤務（森林生態学）
 
-マウスなどで移動・拡大縮小ができる地図上に緊急避難場所を配置して、
+-   出版物: 『[BUGSで学ぶ階層モデリング入門](https://www.kyoritsu-pub.co.jp/book/b10003729.html)』『[生態学のための階層モデリング](https://www.kyoritsu-pub.co.jp/book/b10003301.html)』（以上共訳）など
 
+## この発表の内容
 
+::: {style="font-size: 200%; text-align: center; margin-top: 50px;"}
+Rをつかって<br />「**指定緊急避難場所**」の<br />位置を<br />**地図**上に表示する。
+:::
 
 ## 指定緊急避難場所とは
 
@@ -41,12 +54,20 @@ Rをつかって
 -   **指定避難所**: 災害が発生した場合に避難をしてきた被災者が一定期間生活するための施設
 
 ::: {style="font-size: 80%;"}
-内閣府: [「指定緊急避難場所」と「指定避難所」の違いについて](https://www.bousai.go.jp/taisaku/pdf/hinanjo_02.pdf)
+（内閣府: [「指定緊急避難場所」と「指定避難所」の違いについて](https://www.bousai.go.jp/taisaku/pdf/hinanjo_02.pdf)）
 :::
+
+------------------------------------------------------------------------
+
+![](images/IMG_1929.jpeg)
 
 ## データ
 
-[金沢市オープンデータポータル](https://catalog-data.city.kanazawa.ishikawa.jp/about)から[石川中央都市圏 指定緊急避難場所一覧](https://catalog-data.city.kanazawa.ishikawa.jp/dataset/ishikawa-central-evacuation-space)のCSVファイルをダウンロード
+-   [石川中央都市圏 指定緊急避難場所一覧](https://catalog-data.city.kanazawa.ishikawa.jp/dataset/ishikawa-central-evacuation-space)のCSVファイル
+
+    -   [金沢市オープンデータポータル](https://catalog-data.city.kanazawa.ishikawa.jp/about)からダウンロード可能
+
+## データ読み込み
 
 ```{r}
 #| label: read_data
@@ -54,7 +75,7 @@ Rをつかって
 
 data_dir <- "data"
 data_file <- "ishikawa-central-evacuation-space.csv"
-data <- read_csv(file.path(data_dir, data_file))
+evac_data <- readr::read_csv(file.path(data_dir, data_file))
 ```
 
 ## データ確認
@@ -62,32 +83,36 @@ data <- read_csv(file.path(data_dir, data_file))
 ```{r}
 #| label: view_data
 
-data
+evac_data
 ```
 
 ## 列の確認
 
 ```{r}
-colnames(data)
+colnames(evac_data)
 ```
 
-## 地震の緊急避難場所を抽出
+## 名称と、経度、緯度を表示
 
 ```{r}
-earthquake <- data |>
-  dplyr::filter(`災害種別_地震` == 1)
+#| label: select_columns
+
+evac_data |>
+  dplyr::select(`名称`, `経度`, `緯度`)
 ```
 
-## 数を比較
 
-```{r}
-nrow(data)
-nrow(earthquake)
-```
+## 地図表示
+
+-   方法はいろいろありますが
+
+-   今回はLeafletを使用して地図表示
 
 ## Leaflet
 
-インタラクティブな地図を作成できる
+-   インタラクティブな地図を作成できる Javascriptのライブラリ
+
+-   Rからはleafletパッケージを使用
 
 ```{r}
 library(leaflet)
@@ -132,13 +157,17 @@ leaflet() |>
 
 ## 避難場所のマーカーを追加
 
+-   マーカーを追加するには、`addMarkers`関数を使用
+
+    -   指定緊急避難場所のデータ`evac_data`を`data`引数に、`経度`列を`lng`引数に、`緯度`列を`lat`引数に与える（チルダ(`~`)に注意）
+
 ```{r}
 #| eval: false
 leaflet() |>
   addTiles() |>
   setView(lng = lng, lat = lat, zoom = 15) |>
-  addMarkers(lng = ~`経度`, lat = ~`緯度`,
-             data = earthquake)
+  addMarkers(data = evac_data,
+             lng = ~`経度`, lat = ~`緯度`)
 ```
 
 ------------------------------------------------------------------------
@@ -149,20 +178,23 @@ leaflet() |>
 leaflet() |>
   addTiles() |>
   setView(lng = lng, lat = lat, zoom = 15) |>
-  addMarkers(lng = ~`経度`, lat = ~`緯度`,
-             data = earthquake)
+  addMarkers(data = evac_data,
+             lng = ~`経度`, lat = ~`緯度`)
 ```
 
 ## マーカーに説明を追加
 
+`popup`引数に、`` ~`名称` ``を指定し、さらに念のため`htmltools::htmlEscape` 関数を通す
+
 ```{r}
 #| eval: false
+
 leaflet() |>
   addTiles() |>
   setView(lng = lng, lat = lat, zoom = 15) |>
-  addMarkers(lng = ~`経度`, lat = ~`緯度`,
-             popup = ~`名称` |> htmltools::htmlEscape(),
-             data = earthquake)
+  addMarkers(data = evac_data,
+             lng = ~`経度`, lat = ~`緯度`,
+             popup = ~`名称` |> htmltools::htmlEscape())
 ```
 
 ------------------------------------------------------------------------
@@ -175,9 +207,43 @@ leaflet() |>
 leaflet() |>
   addTiles() |>
   setView(lng = lng, lat = lat, zoom = 15) |>
-  addMarkers(lng = ~`経度`, lat = ~`緯度`,
-             popup = ~`名称` |> htmltools::htmlEscape(),
-             data = earthquake)
+  addMarkers(data = evac_data,
+             lng = ~`経度`, lat = ~`緯度`,
+             popup = ~`名称` |> htmltools::htmlEscape())
+```
+
+## マーカーに説明を追加(2)
+
+[`label`]{.underline}引数に、`` ~`名称` ``を指定（`htmltools::htmlEscape` 関数は不要）
+
+```{r}
+#| eval: false
+
+leaflet() |>
+  addTiles() |>
+  setView(lng = lng, lat = lat, zoom = 15) |>
+  addMarkers(data = evac_data,
+             lng = ~`経度`, lat = ~`緯度`,
+             label = ~`名称`)
+```
+
+------------------------------------------------------------------------
+
+マウスオーバーで、避難場所の名称が表示される
+
+```{r}
+#| echo: false
+
+leaflet() |>
+  addTiles() |>
+  setView(lng = lng, lat = lat, zoom = 15) |>
+  addMarkers(data = evac_data,
+             lng = ~`経度`, lat = ~`緯度`,
+             label = ~`名称`)
 ```
 
 ## まとめ
+
+-   leafletパッケージを使用して、インタラクティブな地図を作成
+
+-   指定緊急避難場所のオープンデータを利用して、その位置をマーカーとして地図上で表示

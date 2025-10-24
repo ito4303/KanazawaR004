@@ -3,11 +3,20 @@ title: "避難場所への経路をRで探索してみよう"
 author: "伊東宏樹"
 date: 2025-11-15
 lang: ja
-format: revealjs
+format:
+  revealjs:
+    theme: [default, custom.scss]
+    code-copy: false
+knitr:
+  opts_chunk: 
+    collapse: true
+    comment: ""
+    prompt: true
 execute: 
   echo: true
 code-line-numbers: true
 embed-resources: true
+slide-number: true
 editor: visual
 ---
 
@@ -23,10 +32,10 @@ library(sf)
 # Data
 data_dir <- "data"
 data_file <- "ishikawa-central-evacuation-space.csv"
-data <- read_csv(file.path(data_dir, data_file))
+evac_data <- read_csv(file.path(data_dir, data_file))
 
 # 地震の避難場所
-earthquake <- data |>
+evac_earthquake <- evac_data |>
   dplyr::filter(`災害種別_地震` == 1)
 ```
 
@@ -189,6 +198,116 @@ options(osrm.server = "http://localhost:5000/",
         osrm.profile = "foot")
 ```
 
+## 例: 金沢駅から兼六園への経路探索
+
+```{r}
+# 金沢駅の位置
+kanazawa_eki <- c(136.648175, 36.578044)
+# 兼六園の位置
+kenrokuen <- c(136.662603, 36.562085)
+```
+
+## Leafletで表示
+
+```{r}
+#| label: leaflet-kanazawa_eki-kenrokuen
+
+library(leaflet)
+leaflet() |>
+  addTiles() |>
+  setView(lng = (kanazawa_eki[1] + kenrokuen[1]) / 2,
+          lat = (kanazawa_eki[2] + kenrokuen[2]) / 2,
+          zoom = 14) |>
+  addCircleMarkers(lng = kanazawa_eki[1], lat = kanazawa_eki[2],
+                   label = "金沢駅", color = "blue", opacity = 0.9,
+                   labelOptions = labelOptions(noHide = TRUE)) |>
+  addCircleMarkers(lng = kenrokuen[1], lat = kenrokuen[2],
+                   label = "兼六園", color = "red", opacity = 0.9,
+                   labelOptions = labelOptions(noHide = TRUE))
+```
+
+## 経路探索
+
+```{r}
+#| cache: true
+
+route <- osrmRoute(src = kanazawa_eki, dst = kenrokuen)
+print(route)
+```
+
+## Leafletで経路を表示
+
+```{r}
+leaflet() |>
+  addTiles() |>
+  setView(lng = (kanazawa_eki[1] + kenrokuen[1]) / 2,
+          lat = (kanazawa_eki[2] + kenrokuen[2]) / 2,
+          zoom = 14) |>
+  addCircleMarkers(lng = kanazawa_eki[1], lat = kanazawa_eki[2],
+                   label = "金沢駅", color = "blue", opacity = 0.9,
+                   labelOptions = labelOptions(noHide = TRUE)) |>
+  addCircleMarkers(lng = kenrokuen[1], lat = kenrokuen[2],
+                   label = "兼六園", color = "red", opacity = 0.9,
+                   labelOptions = labelOptions(noHide = TRUE)) |>
+  addPolylines(data = route, col = "purple", weight = 4, opacity = 0.9)
+```
+
+## 近くの指定緊急避難場所（地震）を探索
+
+金沢駅から徒歩で所用時間の短い避難場所を5箇所探索
+
+```{r}
+eki_df <- data.frame(lng = kanazawa_eki[1],
+                     lat = kanazawa_eki[2])
+evac_df <- evac_earthquake |>
+  dplyr::select(lng = `経度`, lon = `緯度`)
+results <- osrmTable(src = eki_df,
+                     dst = evac_df,
+                     measure = "duration")
+results_df <- data.frame(id = 1:nrow(evac_earthquake),
+                         duration = results$durations[1, ]) |>
+  dplyr::arrange(duration)
+```
+
+---
+
+探索実行
+
+```{r}
+#| cache: true
+
+evac_routes <- purrr::map_df(1:5,
+                          \(i)
+                          osrmRoute(src = kanazawa_eki,
+                                    dst = evac_df[results_df$id[i], ]) |>
+                            dplyr::mutate(rank = i)
+)
+```
+
+---
+
+```{r}
+pal_fun <- colorNumeric("viridis", domain = 1:6)
+
+leaflet() |>
+  addTiles() |>
+  setView(lng = kanazawa_eki[1], lat = kanazawa_eki[2],
+          zoom = 16) |>
+  addCircleMarkers(data = evac_earthquake, 
+                   lng = ~`経度`, lat = ~`緯度`,
+                   label = ~`名称`,
+                   color = "green", opacity = 0.5) |>
+  addPolylines(data = evac_routes,
+               color = pal_fun(1:5),
+               weight = 6, opacity = 0.8) |>
+  addLegend(data = evac_routes,
+            colors = pal_fun(1:5),
+            labels = paste0("避難経路", 1:5),
+            opacity = 1,
+            position = "topright")
+```
+
+
 ## tmap.mapgl
 
 ```{r}
@@ -198,38 +317,33 @@ options(osrm.server = "http://localhost:5000/",
 library(tmap)
 library(tmap.mapgl)
 
-earthquake_sf <- earthquake |>
+eki_sf <- st_as_sf(eki_df, coords = c("lng", "lat"), crs = "WGS84")
+earthquake_sf <- evac_earthquake |>
   sf::st_as_sf(coords = c("経度", "緯度"), crs = 6668) # JGD2011
 
+	
+xmin <- eki_df$lng[1] - 0.0125
+ymin <- eki_df$lat[1] - 0.00833
+xmax <- eki_df$lng[1] + 0.0125
+ymax <- eki_df$lat[1] + 0.00833
+bb <- st_bbox(c(xmin = xmin, xmax = xmax,
+                ymin = ymin, ymax = ymax), crs = 4326)
 tmap_mode("maplibre")
-tm_shape(earthquake_sf) +
+tm_shape(earthquake_sf, bbox = bb) +
   tm_maplibre() +
   tm_symbols(fill = "red", fill_alpha = 0.67)
 ```
 
-## Route
+## 3D表示
 
 ```{r}
-# 金沢駅の位置
-kanazawa_eki <- c(136.648175, 36.578044)
-kenrokuen <- c(136.662603, 36.562085)
+#| label: tmap.mapgl-3d
 
-route <- osrmRoute(src = kanazawa_eki, dst = kenrokuen)
-print(route)
-```
-
-```{r}
-
-# 3Dポリゴンデータの取得範囲
-# 経度は±40秒、緯度は±30秒の範囲（おおよそ±1kmに対応）
-xmin <- lon - 0.0125
-ymin <- lat - 0.00833
-xmax <- lon + 0.0125
-ymax <- lat + 0.00833
-
-tm_shape(bbox = c(xmin, ymin, xmax, ymax),
-         crs = 4326) +  # WGS84
+evac_routes <- evac_routes |>
+  dplyr::mutate(rank = ordered(rank))
+tm_shape(earthquake_sf, bbox = bb) +
   tm_maplibre(pitch = 60) +
-  tm_shape(route) +
-  tm_lines(col = "red", lwd = 2)
+  tm_symbols(fill = "red", fill_alpha = 0.67) +
+  tm_shape(evac_routes) +
+  tm_lines(col = "rank", lwd = 5)
 ```
