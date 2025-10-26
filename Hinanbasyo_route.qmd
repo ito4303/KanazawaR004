@@ -1,0 +1,392 @@
+---
+title: "避難場所への経路をRで探索してみよう"
+author: "伊東宏樹"
+date: 2025-11-15
+lang: ja
+format:
+  revealjs:
+    theme: [default, custom.scss]
+    code-copy: false
+knitr:
+  opts_chunk: 
+    collapse: true
+    comment: ""
+    prompt: true
+execute: 
+  echo: true
+code-line-numbers: false
+embed-resources: true
+slide-number: true
+editor: visual
+---
+
+## 経路探索
+
+::: incremental
+-   ナビゲーションアプリとか
+
+-   Rでもできる
+
+    -   Kanazawa.R #3での[NONONOexxeさんの発表](https://www.docswell.com/s/NONONOexe/Z823Q1-kanazawar-3)
+        -   [OSRM](https://project-osrm.org)を利用
+:::
+
+## OSRM
+
+-   Open Source Routing Machine
+
+-   オープンソースの経路探索システム
+
+-   公式でもサーバーもあるが、Dockerから利用することが多い
+
+    -   Docker: 仮想環境のようなもの
+
+    -   Docker Hubにあるコンテナイメージ: [osrm/osrm-backend](https://hub.docker.com/r/osrm/osrm-backend/)
+
+## 経路探索データの作成
+
+OpenStreetMapデータのダウンロード（日本の中部地方）
+
+```{sh}
+#| eval: false
+#| echo: true
+#| prompt: false
+
+wget https://download.geofabrik.de/asia/japan/chubu-latest.osm.pbf
+```
+
+データの作成
+
+```{sh}
+#| eval: false
+#| echo: true
+#| prompt: false
+
+docker run -t -v "${PWD}:/data" osrm/osrm-backend osrm-extract \
+  -p /opt/foot.lua /data/chubu-latest.osm.pbf
+docker run -t -v "${PWD}:/data" osrm/osrm-backend osrm-partition \
+  /data/chubu-latest.osrm
+docker run -t -v "${PWD}:/data" osrm/osrm-backend osrm-customize \
+  /data/chubu-latest.osrm
+```
+
+## OSRMサーバーの起動
+
+```{sh}
+#| eval: false
+#| echo: true
+#| prompt: false
+
+docker run -t -i -p 5000:5000 -v "${PWD}:/data" \
+  osrm/osrm-backend osrm-routed \
+  --algorithm mld /data/chubu-latest.osrm
+```
+
+::: {style="font-size: 60%;"}
+macOSの場合は、OSRMで標準で使用する5000番ポートがAirPlayレシーバーで使われているので、システム設定\>一般\>AirDropとHandoffで、AirPlayレシーバーを切るか、別のポートを使用するようにする。
+:::
+
+## osrmパッケージ
+
+-   RからOSRMを利用するためのパッケージ
+
+-   CRANから入手可能（[CRAN: Packageosrm](https://cran.r-project.org/package=osrm)）
+
+```{r}
+#| echo: true
+
+library(osrm)
+
+options(osrm.server = "http://localhost:5000/",
+        osrm.profile = "foot")
+```
+
+## 例: 金沢駅から兼六園への経路探索
+
+```{r}
+# 金沢駅の位置
+kanazawa_eki <- c(136.648175, 36.578044)
+# 兼六園の位置
+kenrokuen <- c(136.662603, 36.562085)
+```
+
+## 検索された経路をLeafletで表示
+
+```{r}
+#| eval: false
+
+library(leaflet)
+leaflet() |>
+  addTiles() |>
+  setView(lng = (kanazawa_eki[1] + kenrokuen[1]) / 2,
+          lat = (kanazawa_eki[2] + kenrokuen[2]) / 2,
+          zoom = 14) |>
+  addCircleMarkers(lng = kanazawa_eki[1], lat = kanazawa_eki[2],
+                   label = "金沢駅", color = "blue", opacity = 0.9,
+                   labelOptions = labelOptions(noHide = TRUE)) |>
+  addCircleMarkers(lng = kenrokuen[1], lat = kenrokuen[2],
+                   label = "兼六園", color = "red", opacity = 0.9,
+                   labelOptions = labelOptions(noHide = TRUE))
+```
+
+---
+
+```{r}
+#| label: leaflet-kanazawa_eki-kenrokuen
+#| echo: false
+
+library(leaflet)
+leaflet() |>
+  addTiles() |>
+  setView(lng = (kanazawa_eki[1] + kenrokuen[1]) / 2,
+          lat = (kanazawa_eki[2] + kenrokuen[2]) / 2,
+          zoom = 14) |>
+  addCircleMarkers(lng = kanazawa_eki[1], lat = kanazawa_eki[2],
+                   label = "金沢駅", color = "blue", opacity = 0.9,
+                   labelOptions = labelOptions(noHide = TRUE)) |>
+  addCircleMarkers(lng = kenrokuen[1], lat = kenrokuen[2],
+                   label = "兼六園", color = "red", opacity = 0.9,
+                   labelOptions = labelOptions(noHide = TRUE))
+```
+
+## 経路探索を実行
+
+```{r}
+#| cache: true
+
+route <- osrmRoute(src = kanazawa_eki, dst = kenrokuen)
+print(route)
+```
+
+## Leafletで経路を表示
+
+```{r}
+#| eval: false
+
+leaflet() |>
+  addTiles() |>
+  setView(lng = (kanazawa_eki[1] + kenrokuen[1]) / 2,
+          lat = (kanazawa_eki[2] + kenrokuen[2]) / 2,
+          zoom = 14) |>
+  addCircleMarkers(lng = kanazawa_eki[1], lat = kanazawa_eki[2],
+                   label = "金沢駅", color = "blue", opacity = 0.9,
+                   labelOptions = labelOptions(noHide = TRUE)) |>
+  addCircleMarkers(lng = kenrokuen[1], lat = kenrokuen[2],
+                   label = "兼六園", color = "red", opacity = 0.9,
+                   labelOptions = labelOptions(noHide = TRUE)) |>
+  addPolylines(data = route, col = "purple", weight = 4, opacity = 0.9)
+```
+
+---
+
+```{r}
+#| echo: false
+
+leaflet() |>
+  addTiles() |>
+  setView(lng = (kanazawa_eki[1] + kenrokuen[1]) / 2,
+          lat = (kanazawa_eki[2] + kenrokuen[2]) / 2,
+          zoom = 14) |>
+  addCircleMarkers(lng = kanazawa_eki[1], lat = kanazawa_eki[2],
+                   label = "金沢駅", color = "blue", opacity = 0.9,
+                   labelOptions = labelOptions(noHide = TRUE)) |>
+  addCircleMarkers(lng = kenrokuen[1], lat = kenrokuen[2],
+                   label = "兼六園", color = "red", opacity = 0.9,
+                   labelOptions = labelOptions(noHide = TRUE)) |>
+  addPolylines(data = route, col = "purple", weight = 4, opacity = 0.9)
+```
+
+## 近くの指定緊急避難場所を探索
+
+指定緊急避難場所のデータの読み込み
+
+```{r}
+#| label: setup
+#| output: false
+
+library(tidyverse)
+library(sf)
+
+# Data
+data_dir <- "data"
+data_file <- "ishikawa-central-evacuation-space.csv"
+evac_data <- read_csv(file.path(data_dir, data_file))
+```
+
+## 探索実行
+
+金沢駅から徒歩で所用時間の短い避難場所を5箇所抽出
+
+```{r}
+eki_df <- data.frame(lng = kanazawa_eki[1],
+                     lat = kanazawa_eki[2])
+evac_df <- evac_data |>
+  dplyr::select(lng = `経度`, lon = `緯度`)
+results <- osrmTable(src = eki_df,
+                     dst = evac_df,
+                     measure = "duration")
+results_df <- data.frame(id = 1:nrow(evac_data),
+                         duration = results$durations[1, ]) |>
+  dplyr::arrange(duration)
+```
+
+------------------------------------------------------------------------
+
+抽出された避難場所への経路を探索
+
+```{r}
+#| cache: true
+
+evac_routes <- purrr::map_df(1:5,
+                          \(i)
+                          osrmRoute(src = kanazawa_eki,
+                                    dst = evac_df[results_df$id[i], ]) |>
+                            dplyr::mutate(rank = i)
+)
+```
+
+## Leafletで表示
+
+```{r}
+#| label: leaflet-evac-routes-code
+#| eval: false
+
+# カラーパレットの作成関数
+pal_fun <- colorNumeric("viridis", domain = 1:6)
+
+leaflet() |>
+  addTiles() |>
+  setView(lng = kanazawa_eki[1], lat = kanazawa_eki[2],
+          zoom = 16) |>
+  addCircleMarkers(data = evac_data, 
+                   lng = ~`経度`, lat = ~`緯度`,
+                   label = ~`名称`,
+                   color = "green", opacity = 0.5) |>
+  addPolylines(data = evac_routes,
+               color = pal_fun(1:5),
+               weight = 6, opacity = 0.8) |>
+  addLegend(data = evac_routes,
+            colors = pal_fun(1:5),
+            labels = paste0("避難経路", 1:5),
+            opacity = 1,
+            position = "topright")
+```
+
+---
+
+```{r}
+#| echo: false
+
+# カラーパレットの作成関数
+pal_fun <- colorNumeric("viridis", domain = 1:6)
+
+leaflet() |>
+  addTiles() |>
+  setView(lng = kanazawa_eki[1], lat = kanazawa_eki[2],
+          zoom = 16) |>
+  addCircleMarkers(data = evac_data, 
+                   lng = ~`経度`, lat = ~`緯度`,
+                   label = ~`名称`,
+                   color = "green", opacity = 0.5) |>
+  addPolylines(data = evac_routes,
+               color = pal_fun(1:5),
+               weight = 6, opacity = 0.8) |>
+  addLegend(data = evac_routes,
+            colors = pal_fun(1:5),
+            labels = paste0("避難経路", 1:5),
+            opacity = 1,
+            position = "topright")
+```
+
+## tmap.mapgl
+
+- 公式サイト: [tmap.mapgl](https://r-tmap.github.io/tmap.mapgl/)
+- [CRAN: Package tmap.mapgl](https://cran.r-project.org/package=tmap.mapgl)
+- [tmap](https://r-tmap.github.io/tmap/)を、[mapbox](https://www.mapbox.com/)および[MapLibre](https://maplibre.org/)を利用できるように拡張
+    - tmap: 空間データ可視化のためのRパッケージ
+    - mapbox, mablibre: 地図表示サービス
+    - 今回はオープンソースのMapLibreを使用
+
+## tmap.mapgl用のデータを作成
+
+```{r}
+#| label: tmap.mapgl-data
+
+evac_sf <- evac_data |>
+  sf::st_as_sf(coords = c("経度", "緯度"), crs = 6668) # JGD2011
+evac_routes <- evac_routes |>
+  dplyr::mutate(rank = ordered(rank))
+
+# 金沢駅中心にほぼ2km四方
+lng <- kanazawa_eki[1] + c(-0.0125, 0.0125)
+lat <- kanazawa_eki[2] + c(-0.00833, 0.00833)
+bb <- st_bbox(c(xmin = lng[1], xmax = lng[2],
+                ymin = lat[1], ymax = lat[2]), crs = 4326) # WGS84
+```
+
+## tmap.mapglで表示
+
+```{r}
+#| label: tmap.mapgl-code
+#| message: false
+#| eval: false
+
+library(tmap)
+library(tmap.mapgl)
+
+tmap_mode("maplibre")
+tm_shape(evac_sf, bbox = bb) +
+  tm_maplibre() +
+  tm_symbols(fill = "red", fill_alpha = 0.67)
+```
+
+---
+
+```{r}
+#| label: tmap.mapgl
+#| message: false
+#| echo: false
+
+library(tmap)
+library(tmap.mapgl)
+
+tmap_mode("maplibre")
+tm_shape(evac_sf, bbox = bb) +
+  tm_maplibre() +
+  tm_symbols(fill = "red", fill_alpha = 0.67)
+```
+
+## 3D表示
+
+経路を追加
+
+```{r}
+#| label: tmap.mapgl-3d-code
+#| eval: false
+
+tm_shape(evac_sf, bbox = bb) +
+  tm_maplibre(pitch = 60) +
+  tm_symbols(fill = "red", fill_alpha = 0.67) +
+  tm_shape(evac_routes) +
+  tm_lines(col = "rank", lwd = 5)
+```
+
+---
+
+
+```{r}
+#| label: tmap.mapgl-3d
+#| echo: false
+
+tm_shape(evac_sf, bbox = bb) +
+  tm_maplibre(pitch = 60) +
+  tm_symbols(fill = "red", fill_alpha = 0.67) +
+  tm_shape(evac_routes) +
+  tm_lines(col = "rank", lwd = 5)
+```
+
+## まとめ
+
+-   OSRMを利用して経路探索
+    -   Rからはosrmパッケージを使用
+-   leafletやtmap.mapglで地図表示
