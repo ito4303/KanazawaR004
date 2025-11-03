@@ -37,11 +37,11 @@ editor: visual
 
 -   オープンソースの経路探索システム
 
--   公式でもサーバーもあるが、Dockerから利用することが多い
-
-    -   Docker: 仮想環境のようなもの
+-   公式でもサーバーもあるが、[Docker](https://www.docker.com/ja-jp/)[^1]から利用することが多い
 
     -   Docker Hubにあるコンテナイメージ: [osrm/osrm-backend](https://hub.docker.com/r/osrm/osrm-backend/)
+
+[^1]: アプリケーションと実行環境をまとめて「コンテナ」にして、仮想化して実行するソフトウェア
 
 ## 経路探索データの作成
 
@@ -93,6 +93,7 @@ macOSの場合は、OSRMで標準で使用する5000番ポートがAirPlayレシ
 -   CRANから入手可能（[CRAN: Packageosrm](https://cran.r-project.org/package=osrm)）
 
 ```{r}
+#| label: osrm
 #| echo: true
 
 library(osrm)
@@ -103,16 +104,23 @@ options(osrm.server = "http://localhost:5000/",
 
 ## 例: 金沢駅から兼六園への経路探索
 
+金沢駅と兼六園の位置を設定
+
 ```{r}
+#| label: osrm-data
+
 # 金沢駅の位置
 kanazawa_eki <- c(136.648175, 36.578044)
 # 兼六園の位置
 kenrokuen <- c(136.662603, 36.562085)
 ```
 
-## 検索された経路をLeafletで表示
+## leafletで表示
+
+金沢駅と兼六園の位置を表示
 
 ```{r}
+#| label: leaflet-view-code
 #| eval: false
 
 library(leaflet)
@@ -129,10 +137,10 @@ leaflet() |>
                    labelOptions = labelOptions(noHide = TRUE))
 ```
 
----
+## leafletで表示
 
 ```{r}
-#| label: leaflet-kanazawa_eki-kenrokuen
+#| label: leaflet-view
 #| echo: false
 
 library(leaflet)
@@ -152,15 +160,17 @@ leaflet() |>
 ## 経路探索を実行
 
 ```{r}
+#| label: osrmroute
 #| cache: true
 
 route <- osrmRoute(src = kanazawa_eki, dst = kenrokuen)
 print(route)
 ```
 
-## Leafletで経路を表示
+## leafletで経路を表示
 
 ```{r}
+#| label: leaflet-view-route-code
 #| eval: false
 
 leaflet() |>
@@ -177,9 +187,10 @@ leaflet() |>
   addPolylines(data = route, col = "purple", weight = 4, opacity = 0.9)
 ```
 
----
+## leafletで経路を表示
 
 ```{r}
+#| label: leaflet-view-route
 #| echo: false
 
 leaflet() |>
@@ -198,10 +209,11 @@ leaflet() |>
 
 ## 近くの指定緊急避難場所を探索
 
-指定緊急避難場所のデータの読み込み
+-   tidyverseパッケージとsfパッケージを読み込み
+-   指定緊急避難場所のデータの読み込み
 
 ```{r}
-#| label: setup
+#| label: read-data
 #| output: false
 
 library(tidyverse)
@@ -213,11 +225,14 @@ data_file <- "ishikawa-central-evacuation-space.csv"
 evac_data <- read_csv(file.path(data_dir, data_file))
 ```
 
-## 探索実行
+## 各避難所までの所要時間
 
-金沢駅から徒歩で所用時間の短い避難場所を5箇所抽出
+-   `osrmTable`関数を使用して、金沢駅から各避難場所までの所要時間を求める
+-   データフレームにして、所要時間が短い順に並び替える
 
 ```{r}
+#| label: osrmtable
+
 eki_df <- data.frame(lng = kanazawa_eki[1],
                      lat = kanazawa_eki[2])
 evac_df <- evac_data |>
@@ -230,9 +245,9 @@ results_df <- data.frame(id = 1:nrow(evac_data),
   dplyr::arrange(duration)
 ```
 
-------------------------------------------------------------------------
+## 近くの避難場所への経路を探索
 
-抽出された避難場所への経路を探索
+-   所要時間が短い上位5か所の避難場所について経路を探索する
 
 ```{r}
 #| cache: true
@@ -245,7 +260,7 @@ evac_routes <- purrr::map_df(1:5,
 )
 ```
 
-## Leafletで表示
+## 探索された経路をleafletで表示
 
 ```{r}
 #| label: leaflet-evac-routes-code
@@ -272,9 +287,10 @@ leaflet() |>
             position = "topright")
 ```
 
----
+## 探索された経路をleafletで表示
 
 ```{r}
+#| label: leaflet-evac-routes
 #| echo: false
 
 # カラーパレットの作成関数
@@ -300,12 +316,12 @@ leaflet() |>
 
 ## tmap.mapgl
 
-- 公式サイト: [tmap.mapgl](https://r-tmap.github.io/tmap.mapgl/)
-- [CRAN: Package tmap.mapgl](https://cran.r-project.org/package=tmap.mapgl)
-- [tmap](https://r-tmap.github.io/tmap/)を、[mapbox](https://www.mapbox.com/)および[MapLibre](https://maplibre.org/)を利用できるように拡張
-    - tmap: 空間データ可視化のためのRパッケージ
-    - mapbox, mablibre: 地図表示サービス
-    - 今回はオープンソースのMapLibreを使用
+-   公式サイト: [tmap.mapgl](https://r-tmap.github.io/tmap.mapgl/)
+-   [CRAN: Package tmap.mapgl](https://cran.r-project.org/package=tmap.mapgl)
+-   [tmap](https://r-tmap.github.io/tmap/)を、[mapbox](https://www.mapbox.com/)および[MapLibre](https://maplibre.org/)を利用できるように拡張
+    -   tmap: 空間データ可視化のためのRパッケージ
+    -   mapbox, mablibre: 地図表示サービス
+    -   今回はオープンソースのMapLibreを使用
 
 ## tmap.mapgl用のデータを作成
 
@@ -340,7 +356,7 @@ tm_shape(evac_sf, bbox = bb) +
   tm_symbols(fill = "red", fill_alpha = 0.67)
 ```
 
----
+## tmap.mapglで表示
 
 ```{r}
 #| label: tmap.mapgl
@@ -371,8 +387,7 @@ tm_shape(evac_sf, bbox = bb) +
   tm_lines(col = "rank", lwd = 5)
 ```
 
----
-
+## 3D表示
 
 ```{r}
 #| label: tmap.mapgl-3d

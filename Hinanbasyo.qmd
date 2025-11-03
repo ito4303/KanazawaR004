@@ -1,5 +1,5 @@
 ---
-title: "避難場所がどこか、Rで確認してみよう"
+title: "避難場所の位置をRで確認してみよう"
 author: "伊東宏樹"
 date: 2025-11-15
 lang: ja
@@ -22,6 +22,7 @@ editor: visual
 
 ```{r}
 #| label: setup
+#| echo: false
 #| output: false
 
 library(tidyverse)
@@ -33,7 +34,7 @@ library(tidyverse)
 
 -   個人事業主（[伊東生態統計研究室](https://ito4303.sakura.ne.jp/)）
 
-    -   データ解析、執筆・翻訳、研修講師などお引き受けいたします。
+    -   データ解析、執筆・翻訳、研修講師などお引き受けいたします
 
 -   1991〜2024年まで森林総合研究所勤務（森林生態学）
 
@@ -42,7 +43,7 @@ library(tidyverse)
 ## この発表の内容
 
 ::: {style="font-size: 200%; text-align: center; margin-top: 50px;"}
-Rをつかって<br />「**指定緊急避難場所**」の<br />位置を<br />**地図**上に表示する。
+Rをつかって<br />「**指定緊急避難場所**」の<br />位置を<br />**地図**上に表示する
 :::
 
 ## 指定緊急避難場所とは
@@ -50,8 +51,8 @@ Rをつかって<br />「**指定緊急避難場所**」の<br />位置を<br />
 -   **指定緊急避難場所**: 災害の危険から命を守るために緊急的に避難する場所
 
     -   土砂災害、洪水、津波、地震等の災害種別ごとに指定が行われる
-
--   **指定避難所**: 災害が発生した場合に避難をしてきた被災者が一定期間生活するための施設
+    -   似ているけど違う
+        -   **指定避難所**: 災害が発生した場合に避難をしてきた被災者が一定期間生活するための施設
 
 ::: {style="font-size: 80%;"}
 （内閣府: [「指定緊急避難場所」と「指定避難所」の違いについて](https://www.bousai.go.jp/taisaku/pdf/hinanjo_02.pdf)）
@@ -65,7 +66,9 @@ Rをつかって<br />「**指定緊急避難場所**」の<br />位置を<br />
 
 -   [石川中央都市圏 指定緊急避難場所一覧](https://catalog-data.city.kanazawa.ishikawa.jp/dataset/ishikawa-central-evacuation-space)のCSVファイル
 
-    -   [金沢市オープンデータポータル](https://catalog-data.city.kanazawa.ishikawa.jp/about)からダウンロード可能
+    -   `ishikawa-central-evacuation-space.csv`
+
+    -   [金沢市オープンデータポータル](https://portal-data.city.kanazawa.ishikawa.jp)からダウンロード可能
 
 ## データ読み込み
 
@@ -111,22 +114,36 @@ evac_data |>
 
 -   インタラクティブな地図を作成できる Javascriptのライブラリ
 
--   Rからはleafletパッケージを使用
+-   Rからは[leaflet](https://cran.r-project.org/package=leaflet)パッケージを使用
 
 ```{r}
+#| label: leaflet
+
 library(leaflet)
 ```
 
 ## 表示例
 
--   タイルを追加
+-   `addTiles`関数で、タイルを追加（デフォルトではOpenStreetMap）
 -   パイプ演算子(`|>`)で、レイヤーを重ねていくイメージ
 
 ```{r}
+#| label: leaflet-tile-code
+#| eval: false
+
+leaflet() |>
+  addTiles()
+```
+
+## 表示例
+
+```{r}
+#| label: leaflet-tile
+#| echo: false
 #| message: false
 
 leaflet() |>
-  addTiles() # デフォルトでOpenStreetMapを表示
+  addTiles()
 ```
 
 ## 金沢駅付近を表示
@@ -134,6 +151,7 @@ leaflet() |>
 `setView`関数で、経度、緯度、ズームレベルを指定
 
 ```{r}
+#| label: kanazawa-eki-code
 #| eval: false
 
 # 金沢駅の位置
@@ -145,9 +163,10 @@ leaflet() |>
   setView(lng = lng, lat = lat, zoom = 15)
 ```
 
-------------------------------------------------------------------------
+## 金沢駅付近を表示
 
 ```{r}
+#| label: kanazawa-eki
 #| echo: false
 
 # 金沢駅の位置
@@ -162,10 +181,11 @@ leaflet() |>
 ## 避難場所のマーカーを追加
 
 -   `addMarkers`関数でマーカーを追加
-    -   指定緊急避難場所のデータ`evac_data`を`data`引数に、`evac_data`の`経度`列を`lng`引数に、`緯度`列を`lat`引数に与える（チルダ(`~`)に注意）
+    -   先ほど読み込んだ指定緊急避難場所のデータ`evac_data`を`data`引数に、`evac_data`の`経度`列を`lng`引数に、`緯度`列を`lat`引数に与える（チルダ(`~`)に注意）
 
 ```{r}
 #| eval: false
+
 leaflet() |>
   addTiles() |>
   setView(lng = lng, lat = lat, zoom = 15) |>
@@ -173,7 +193,7 @@ leaflet() |>
              lng = ~`経度`, lat = ~`緯度`)
 ```
 
-------------------------------------------------------------------------
+## 避難場所のマーカーを追加
 
 ```{r}
 #| echo: false
@@ -200,7 +220,7 @@ leaflet() |>
              popup = ~`名称` |> htmltools::htmlEscape())
 ```
 
-------------------------------------------------------------------------
+## マーカーに説明を追加
 
 マーカーをクリックすると、避難場所の名称が表示される
 
@@ -230,7 +250,7 @@ leaflet() |>
              label = ~`名称`)
 ```
 
-------------------------------------------------------------------------
+## マーカーに説明を追加(2)
 
 マウスオーバーで、避難場所の名称が表示される
 
@@ -245,8 +265,138 @@ leaflet() |>
              label = ~`名称`)
 ```
 
+## 津波浸水想定データと津波の指定緊急避難場所を重ねる
+
+-   津波浸水想定データ
+    -   [国土数値情報](https://nlftp.mlit.go.jp/ksj/)＞[津波浸水想定データ](https://nlftp.mlit.go.jp/ksj/gml/datalist/KsjTmplt-A40-v2_0.html) の石川県分 (`A40-17_17.geojson`)
+
+```{r}
+#| message: false
+
+tunami_file <- "A40-17_17.geojson"
+tunami_data <- sf::st_read(file.path(data_dir, tunami_file)) |>
+  sf::st_transform(crs = 4326)
+```
+
+## 津波浸水想定データ
+
+データ確認
+
+```{r}
+tunami_data
+```
+
+## 想定される津波浸水深
+
+`A40_003`列が津波浸水深の区分
+
+```{r}
+table(tunami_data$A40_003) 
+```
+
+## 順序付き因子に変換
+
+```{r}
+tunami_data <- tunami_data |>
+  dplyr::mutate(Level = ordered(A40_003,
+                                levels = c("0.3m未満",
+                                           "0.3m以上 〜 0.5m未満",
+                                           "0.5m以上 〜 1m未満",
+                                           "1m以上 〜 3m未満",
+                                           "3m以上 〜 5m未満",
+                                           "5m以上 〜 10m未満",
+                                           "10m以上 〜 20m未満")))
+```
+
+## leafletに表示
+
+金沢市金石地区付近を表示
+
+```{r}
+#| label: leaflet_tunami-code
+#| eval : false
+
+pal <- colorFactor("viridis", tunami_data$Level, ordered = TRUE,
+                   reverse = TRUE)
+leaflet(tunami_data) |>
+  addTiles() |>
+  setView(lng = 136.593827, lat = 36.601285, zoom = 15) |>
+  addPolygons(stroke = FALSE,
+              fillColor = ~pal(Level),
+              fillOpacity = 0.9) |>
+  addLegend(pal = pal, values = ~Level, title = "津波浸水深")
+```
+
+## leafletに表示
+
+```{r}
+#| label: leaflet_tunami
+#| echo : false
+
+pal <- colorFactor("viridis", tunami_data$Level, ordered = TRUE,
+                   reverse = TRUE)
+leaflet(tunami_data) |>
+  addTiles() |>
+  setView(lng = 136.593827, lat = 36.601285, zoom = 15) |>
+  addPolygons(stroke = FALSE,
+              fillColor = ~pal(Level),
+              fillOpacity = 0.9) |>
+  addLegend(pal = pal, values = ~Level, title = "津波浸水深")
+```
+
+## 津波の指定緊急避難場所を抽出
+
+-   津波の指定緊急避難場所をマーカーとして表示したい
+
+-   まずは、津波の指定緊急避難場所を抽出
+
+```{r}
+tunami_evac <- evac_data |>
+  dplyr::filter(`災害種別_津波` == 1)
+```
+
+## 地図に津波避難場所をマーカーとして追加
+
+```{r}
+#| label: leaflet_tunami_evac-code
+#| eval: false
+
+leaflet(tunami_data) |>
+  addTiles() |>
+  setView(lng = 136.593827, lat = 36.601285, zoom = 15) |>
+  addPolygons(stroke = FALSE,
+              fillColor = ~pal(Level),
+              fillOpacity = 0.9) |>
+  addLegend(pal = pal, values = ~Level, title = "津波浸水深") |>
+  addMarkers(data = tunami_evac,
+             lng = ~`経度`, lat = ~`緯度`,
+             label = ~`名称`)
+```
+
+## 地図に津波避難場所をマーカーとして追加
+
+```{r}
+#| label: leaflet_tunami_evac
+#| echo: false
+
+leaflet(tunami_data) |>
+  addTiles() |>
+  setView(lng = 136.593827, lat = 36.601285, zoom = 15) |>
+  addPolygons(stroke = FALSE,
+              fillColor = ~pal(Level),
+              fillOpacity = 0.9) |>
+  addLegend(pal = pal, values = ~Level, title = "津波浸水深") |>
+  addMarkers(data = tunami_evac,
+             lng = ~`経度`, lat = ~`緯度`,
+             label = ~`名称`)
+```
+
 ## まとめ
 
--   leafletパッケージを使用して、インタラクティブな地図を作成
+-   leafletパッケージを使用して、Rでインタラクティブな地図を作成できる
 
--   指定緊急避難場所のオープンデータを利用して、その位置をマーカーとして地図上で表示
+-   指定緊急避難場所のオープンデータを利用して、その位置をマーカーとして地図上で表示できる
+
+-   津波浸水想定データを利用して、浸水想定区域を地図上に表示し、津波の指定緊急避難場所を重ねて表示できる
+
+    -   他の災害（洪水・高潮等）でも、災害の想定区域がデータとして公開されているものは同様に表示できる
