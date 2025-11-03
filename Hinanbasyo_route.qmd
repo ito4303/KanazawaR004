@@ -402,6 +402,6 @@ tm_shape(evac_sf, bbox = bb) +
 
 ## まとめ
 
--   OSRMを利用して経路探索
+-   OSRMを利用して自前で経路探索ができる
     -   Rからはosrmパッケージを使用
--   leafletやtmap.mapglで地図表示
+-   leafletやtmap.mapglで、探索した経路を地図に表示できる
