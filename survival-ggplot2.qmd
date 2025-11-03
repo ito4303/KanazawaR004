@@ -1,0 +1,162 @@
+---
+title: "ggplot2で 生存時間分析のグラフ作成"
+author: "伊東宏樹"
+date: 2025-11-15
+lang: ja
+format:
+  revealjs:
+    theme: [default, custom.scss]
+    code-copy: false
+knitr:
+  opts_chunk: 
+    collapse: true
+    comment: ""
+    prompt: true
+execute: 
+  echo: true
+fig-width: 4
+fig-height: 2.6
+code-line-numbers: false
+embed-resources: true
+slide-number: true
+editor: visual
+---
+
+## 生存時間分析
+
+あるイベントが発生するまでの時間を分析
+
+-   病気の人の死亡
+
+-   機械の故障
+
+「打ちきり」がある
+
+-   調査終了時までにイベントが発生しなかった
+
+-   途中で追跡ができなくなった
+
+## 生存時間曲線
+
+横軸: 生存時間、縦軸: 生存率のグラフ
+
+**カプラン-マイヤー曲線**がよく使われる
+
+-   イベント発生時に生存率が下がる
+
+-   階段状にプロット
+
+-   具体例はのちほど
+
+## Rで生存時間分析
+
+survivalパッケージが標準的
+
+```{r}
+#| label: setup
+
+library(survival)
+```
+
+## 例
+
+aml: 急性骨髄性白血病 (acute myelogenous leukemia) 患者の生存データ
+
+```{r}
+#| label: data
+
+data(cancer, package = "survival")
+help(aml) # データの詳細を表示
+head(aml)
+```
+
+## カプラン-マイヤー曲線
+
+```{r}
+#| label: survival-km-plot
+#| fig-width: 4
+#| fig-height: 3
+
+fit <- survfit(Surv(time = time, event = status) ~ x, data = aml)
+plot(fit, col = c(2, 5))
+```
+
+## survmimerパッケージ
+
+```{r}
+#| label: survminer
+
+library(survminer)
+ggsurvplot(fit)
+```
+
+## jskmパッケージ
+
+```{r}
+library(jskm)
+
+jskm(fit)
+```
+
+## ggplot2.utilsパッケージ
+
+```{r}
+#| label: geom_km
+#| fig-width: 6
+#| fig-height: 3
+
+library(ggplot2.utils)
+ggplot(aml, aes(time = time, status = status, color = x)) +
+  geom_km()
+```
+
+## 表示の調整
+
+```{r}
+#| label: geom_km_plus-code
+#| eval: false
+
+library(ggplot2.utils)
+ggplot(aml, aes(time = time, status = status, color = x)) +
+  geom_km() +
+  geom_km_ticks() +
+  labs(x = "時間（週）", y = "生存率") +
+  scale_color_discrete(name = "維持化学療法",
+                       label = c("あり", "なし")) +
+  theme_classic(base_family = "Noto Sans JP") +
+    theme(legend.position = "inside",
+          legend.position.inside = c(0.95, 0.95),
+          legend.justification = c("right", "top"),
+          legend.box.background = element_rect())
+```
+
+## 表示の調整
+
+```{r}
+#| label: geom_km_plus
+#| echo: false
+
+ggplot(aml, aes(time = time, status = status, color = x)) +
+  geom_km() +
+  geom_km_ticks() +
+  labs(x = "時間（週）", y = "生存率") +
+  scale_color_discrete(name = "維持化学療法",
+                       label = c("あり", "なし")) +
+  theme_classic(base_family = "Noto Sans JP", base_size = 12) +
+  theme(legend.position = "inside",
+        legend.position.inside = c(0.95, 0.95),
+        legend.justification = c("right", "top"),
+        legend.box.background = element_rect())
+```
+
+## まとめ
+
+ggplot2をつかった、カプラン-マイヤー曲線の表示方法
+
+-   survminerパッケージの`ggsurplot`関数
+
+-   jskmパッケージの`jskm`関数
+
+-   ggplot2.utilsパッケージの`geom_km`関数
+
+細かく調整したいときはggplot2.utilsパッケージを使うのがいいかも
