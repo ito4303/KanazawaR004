@@ -40,7 +40,7 @@ editor: visual
 
 横軸: 生存時間、縦軸: 生存率のグラフ
 
-**カプラン-マイヤー曲線**がよく使われる
+**カプラン=マイヤー曲線**がよく使われる
 
 -   イベント発生時に生存率が下がる
 
@@ -70,15 +70,16 @@ help(aml) # データの詳細を表示
 head(aml)
 ```
 
-## カプラン-マイヤー曲線
+## カプラン=マイヤー曲線
 
 ```{r}
 #| label: survival-km-plot
-#| fig-width: 4
+#| fig-width: 5
 #| fig-height: 3
 
 fit <- survfit(Surv(time = time, event = status) ~ x, data = aml)
-plot(fit, col = c(2, 5))
+par(mai = c(0.5, 0.5, 0.1, 0.1)) # 余白の調整
+plot(fit, mark.time = TRUE, col = c(2, 5), lwd = 2)
 ```
 
 ## survmimerパッケージ
@@ -151,7 +152,7 @@ ggplot(aml, aes(time = time, status = status, color = x)) +
 
 ## まとめ
 
-ggplot2をつかった、カプラン-マイヤー曲線の表示方法
+ggplot2をつかった、カプラン=マイヤー曲線の表示方法
 
 -   survminerパッケージの`ggsurplot`関数
 
