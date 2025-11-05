@@ -1,0 +1,115 @@
+---
+title: "RからローカルLLMをつかう"
+author: "伊東宏樹"
+date: 2025-11-15
+lang: ja
+format:
+  revealjs:
+    theme: [default, custom.scss]
+    code-copy: false
+knitr:
+  opts_chunk: 
+    collapse: true
+    comment: ""
+    prompt: true
+execute: 
+  echo: true
+fig-width: 4
+fig-height: 2.6
+code-line-numbers: false
+embed-resources: true
+slide-number: true
+editor: visual
+---
+
+## この発表の内容
+
+-   ローカルLLMをOllamaを経由して、Rから使う
+    -   Rでは、ellmerパッケージを使用
+
+## ローカルLLM
+
+-   自分のコンピューターで動く大規模言語モデル (LLM: Large Language Model)
+    -   ネットにつながらなくても使える
+    -   データが外部に送信されない
+        -   機密情報も扱える
+    -   無料で使えるものも多い
+
+## Ollama
+
+-   ローカルLLMを管理・実行するためのツール
+-   <https://ollama.com/>
+-   Ollamaから使えるローカルLLM
+    -   llama
+    -   gemma
+    -   gpt-oss
+    -   その他多数
+
+## Ollamaのインストール
+
+-   インストーラーをダウンロードして、インストール
+
+-   Dockerイメージもあり
+
+## ローカルLLMのダウンロード
+
+例: コマンドラインからgemma3nを取得
+
+```{bash}
+#| eval: false
+
+ollama pull gemma3n
+```
+
+Rから[ollamar](https://cran.r-project.org/package=ollamar)パッケージを使う場合
+
+```{r}
+#| eval: false
+
+ollamar::pull("gemma3n")
+```
+
+## ellmerパッケージ
+
+-   LLMをRから簡単に使えるようにする
+-   <https://ellmer.tidyverse.org/>
+-   CRANからインストール可能
+
+```{r}
+#| label: install_ellmer
+#| eval: false
+
+install.packages("ellmer")
+```
+
+## ellmerでOllamaのローカルLLMを使う
+
+```{r}
+#| label: ollama-gemma
+
+library(ellmer)
+chat <- chat_ollama(model = "gemma3n")
+```
+
+## 実行例
+
+```{r}
+#| label: ollama-gemma-example
+#| cache: true
+
+res <- chat$chat("Rでデータフレームから要素をとり出す方法を教えて",
+                 echo = "none")
+```
+
+## 結果
+
+```{r}
+#| output: asis
+
+res
+```
+
+## まとめ
+
+-   Ollama
+-   ellmerパッケージ
