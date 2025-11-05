@@ -32,15 +32,15 @@ editor: visual
 
 「打ちきり」がある
 
--   調査終了時までにイベントが発生しなかった
+-   試験終了時までにイベントが発生しなかった
 
--   途中で追跡ができなくなった
+-   途中で追跡できなくなった
 
 ## 生存時間曲線
 
-横軸: 生存時間、縦軸: 生存率のグラフ
+横軸: 時間、縦軸: 生存率、のグラフ
 
-**カプラン-マイヤー曲線**がよく使われる
+**カプラン=マイヤー曲線**がよく使われる
 
 -   イベント発生時に生存率が下がる
 
@@ -60,7 +60,7 @@ library(survival)
 
 ## 例
 
-aml: 急性骨髄性白血病 (acute myelogenous leukemia) 患者の生存データ
+**aml**: 急性骨髄性白血病 (acute myelogenous leukemia) 患者の生存データ
 
 ```{r}
 #| label: data
@@ -70,15 +70,16 @@ help(aml) # データの詳細を表示
 head(aml)
 ```
 
-## カプラン-マイヤー曲線
+## カプラン=マイヤー曲線
 
 ```{r}
 #| label: survival-km-plot
-#| fig-width: 4
+#| fig-width: 5
 #| fig-height: 3
 
 fit <- survfit(Surv(time = time, event = status) ~ x, data = aml)
-plot(fit, col = c(2, 5))
+par(mai = c(0.5, 0.5, 0.1, 0.1)) # 余白の調整
+plot(fit, mark.time = TRUE, col = c(2, 5), lwd = 2)
 ```
 
 ## survmimerパッケージ
@@ -114,7 +115,9 @@ ggplot(aml, aes(time = time, status = status, color = x)) +
 
 ```{r}
 #| label: geom_km_plus-code
-#| eval: false
+#| output-location: slide
+#| fig-width: 10
+#| fig-height: 6
 
 library(ggplot2.utils)
 ggplot(aml, aes(time = time, status = status, color = x)) +
@@ -123,35 +126,16 @@ ggplot(aml, aes(time = time, status = status, color = x)) +
   labs(x = "時間（週）", y = "生存率") +
   scale_color_discrete(name = "維持化学療法",
                        label = c("あり", "なし")) +
-  theme_classic(base_family = "Noto Sans JP") +
+  theme_classic(base_family = "Noto Sans JP", base_size = 21) +
     theme(legend.position = "inside",
           legend.position.inside = c(0.95, 0.95),
           legend.justification = c("right", "top"),
           legend.box.background = element_rect())
 ```
 
-## 表示の調整
-
-```{r}
-#| label: geom_km_plus
-#| echo: false
-
-ggplot(aml, aes(time = time, status = status, color = x)) +
-  geom_km() +
-  geom_km_ticks() +
-  labs(x = "時間（週）", y = "生存率") +
-  scale_color_discrete(name = "維持化学療法",
-                       label = c("あり", "なし")) +
-  theme_classic(base_family = "Noto Sans JP", base_size = 12) +
-  theme(legend.position = "inside",
-        legend.position.inside = c(0.95, 0.95),
-        legend.justification = c("right", "top"),
-        legend.box.background = element_rect())
-```
-
 ## まとめ
 
-ggplot2をつかった、カプラン-マイヤー曲線の表示方法
+ggplot2をつかった、カプラン=マイヤー曲線の表示方法
 
 -   survminerパッケージの`ggsurplot`関数
 
