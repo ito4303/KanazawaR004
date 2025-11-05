@@ -128,19 +128,9 @@ library(leaflet)
 -   パイプ演算子(`|>`)で、レイヤーを重ねていくイメージ
 
 ```{r}
-#| label: leaflet-tile-code
-#| eval: false
-
-leaflet() |>
-  addTiles()
-```
-
-## 表示例
-
-```{r}
 #| label: leaflet-tile
-#| echo: false
-#| message: false
+#| output-location: slide
+
 
 leaflet() |>
   addTiles()
@@ -151,23 +141,8 @@ leaflet() |>
 `setView`関数で、経度、緯度、ズームレベルを指定
 
 ```{r}
-#| label: kanazawa-eki-code
-#| eval: false
-
-# 金沢駅の位置
-lat <- 36.578044
-lng <- 136.648175
-
-leaflet() |>
-  addTiles() |>
-  setView(lng = lng, lat = lat, zoom = 15)
-```
-
-## 金沢駅付近を表示
-
-```{r}
 #| label: kanazawa-eki
-#| echo: false
+#| output-location: slide
 
 # 金沢駅の位置
 lat <- 36.578044
@@ -184,19 +159,8 @@ leaflet() |>
     -   先ほど読み込んだ指定緊急避難場所のデータ`evac_data`を`data`引数に、`evac_data`の`経度`列を`lng`引数に、`緯度`列を`lat`引数に与える（チルダ(`~`)に注意）
 
 ```{r}
-#| eval: false
-
-leaflet() |>
-  addTiles() |>
-  setView(lng = lng, lat = lat, zoom = 15) |>
-  addMarkers(data = evac_data,
-             lng = ~`経度`, lat = ~`緯度`)
-```
-
-## 避難場所のマーカーを追加
-
-```{r}
-#| echo: false
+#| label: add_markers
+#| output-location: slide
 
 leaflet() |>
   addTiles() |>
@@ -210,22 +174,8 @@ leaflet() |>
 `popup`引数に、`` ~`名称` ``を指定し、さらに念のため`htmltools::htmlEscape` 関数を通す
 
 ```{r}
-#| eval: false
-
-leaflet() |>
-  addTiles() |>
-  setView(lng = lng, lat = lat, zoom = 15) |>
-  addMarkers(data = evac_data,
-             lng = ~`経度`, lat = ~`緯度`,
-             popup = ~`名称` |> htmltools::htmlEscape())
-```
-
-## マーカーに説明を追加
-
-マーカーをクリックすると、避難場所の名称が表示される
-
-```{r}
-#| echo: false
+#| label: add_marker_popups
+#| output-location: slide
 
 leaflet() |>
   addTiles() |>
@@ -240,22 +190,8 @@ leaflet() |>
 [`label`]{.underline}引数に、`` ~`名称` ``を指定（`htmltools::htmlEscape` 関数は不要）
 
 ```{r}
-#| eval: false
-
-leaflet() |>
-  addTiles() |>
-  setView(lng = lng, lat = lat, zoom = 15) |>
-  addMarkers(data = evac_data,
-             lng = ~`経度`, lat = ~`緯度`,
-             label = ~`名称`)
-```
-
-## マーカーに説明を追加(2)
-
-マウスオーバーで、避難場所の名称が表示される
-
-```{r}
-#| echo: false
+#| label: add_marker_labels
+#| output-location: slide
 
 leaflet() |>
   addTiles() |>
@@ -313,25 +249,8 @@ tunami_data <- tunami_data |>
 金沢市金石地区付近を表示
 
 ```{r}
-#| label: leaflet_tunami-code
-#| eval : false
-
-pal <- colorFactor("viridis", tunami_data$Level, ordered = TRUE,
-                   reverse = TRUE)
-leaflet(tunami_data) |>
-  addTiles() |>
-  setView(lng = 136.593827, lat = 36.601285, zoom = 15) |>
-  addPolygons(stroke = FALSE,
-              fillColor = ~pal(Level),
-              fillOpacity = 0.9) |>
-  addLegend(pal = pal, values = ~Level, title = "津波浸水深")
-```
-
-## leafletに表示
-
-```{r}
 #| label: leaflet_tunami
-#| echo : false
+#| output-location: slide
 
 pal <- colorFactor("viridis", tunami_data$Level, ordered = TRUE,
                    reverse = TRUE)
@@ -359,25 +278,7 @@ tunami_evac <- evac_data |>
 
 ```{r}
 #| label: leaflet_tunami_evac-code
-#| eval: false
-
-leaflet(tunami_data) |>
-  addTiles() |>
-  setView(lng = 136.593827, lat = 36.601285, zoom = 15) |>
-  addPolygons(stroke = FALSE,
-              fillColor = ~pal(Level),
-              fillOpacity = 0.9) |>
-  addLegend(pal = pal, values = ~Level, title = "津波浸水深") |>
-  addMarkers(data = tunami_evac,
-             lng = ~`経度`, lat = ~`緯度`,
-             label = ~`名称`)
-```
-
-## 地図に津波避難場所をマーカーとして追加
-
-```{r}
-#| label: leaflet_tunami_evac
-#| echo: false
+#| output-location: slide
 
 leaflet(tunami_data) |>
   addTiles() |>
