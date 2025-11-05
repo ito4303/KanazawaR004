@@ -84,6 +84,8 @@ install.packages("ellmer")
 
 ## ellmerでOllamaのローカルLLMを使う
 
+チャットの設定
+
 ```{r}
 #| label: ollama-gemma
 
@@ -97,19 +99,15 @@ chat <- chat_ollama(model = "gemma3n")
 #| label: ollama-gemma-example
 #| cache: true
 
-res <- chat$chat("Rでデータフレームから要素をとり出す方法を教えて",
-                 echo = "none")
-```
-
-## 結果
-
-```{r}
-#| output: asis
-
-res
+chat$chat("Rで分散分析をおこなう関数を教えて")
 ```
 
 ## まとめ
 
--   Ollama
--   ellmerパッケージ
+ellmer以外で、ローカルLLMを使えるパッケージ
+
+-   [mall](https://cran.r-project.org/package=mall): 文書の要約・分類・翻訳など
+
+-   [ragnar](https://cloud.r-project.org/package=ragnar): RAG (Retrieval-Augmented Generation)
+
+-   など
