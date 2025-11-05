@@ -120,28 +120,8 @@ kenrokuen <- c(136.662603, 36.562085)
 金沢駅と兼六園の位置を表示
 
 ```{r}
-#| label: leaflet-view-code
-#| eval: false
-
-library(leaflet)
-leaflet() |>
-  addTiles() |>
-  setView(lng = (kanazawa_eki[1] + kenrokuen[1]) / 2,
-          lat = (kanazawa_eki[2] + kenrokuen[2]) / 2,
-          zoom = 14) |>
-  addCircleMarkers(lng = kanazawa_eki[1], lat = kanazawa_eki[2],
-                   label = "金沢駅", color = "blue", opacity = 0.9,
-                   labelOptions = labelOptions(noHide = TRUE)) |>
-  addCircleMarkers(lng = kenrokuen[1], lat = kenrokuen[2],
-                   label = "兼六園", color = "red", opacity = 0.9,
-                   labelOptions = labelOptions(noHide = TRUE))
-```
-
-## leafletで表示
-
-```{r}
 #| label: leaflet-view
-#| echo: false
+#| output-location: slide
 
 library(leaflet)
 leaflet() |>
@@ -170,28 +150,8 @@ print(route)
 ## leafletで経路を表示
 
 ```{r}
-#| label: leaflet-view-route-code
-#| eval: false
-
-leaflet() |>
-  addTiles() |>
-  setView(lng = (kanazawa_eki[1] + kenrokuen[1]) / 2,
-          lat = (kanazawa_eki[2] + kenrokuen[2]) / 2,
-          zoom = 14) |>
-  addCircleMarkers(lng = kanazawa_eki[1], lat = kanazawa_eki[2],
-                   label = "金沢駅", color = "blue", opacity = 0.9,
-                   labelOptions = labelOptions(noHide = TRUE)) |>
-  addCircleMarkers(lng = kenrokuen[1], lat = kenrokuen[2],
-                   label = "兼六園", color = "red", opacity = 0.9,
-                   labelOptions = labelOptions(noHide = TRUE)) |>
-  addPolylines(data = route, col = "purple", weight = 4, opacity = 0.9)
-```
-
-## leafletで経路を表示
-
-```{r}
 #| label: leaflet-view-route
-#| echo: false
+#| output-location: slide
 
 leaflet() |>
   addTiles() |>
@@ -264,34 +224,7 @@ evac_routes <- purrr::map_df(1:5,
 
 ```{r}
 #| label: leaflet-evac-routes-code
-#| eval: false
-
-# カラーパレットの作成関数
-pal_fun <- colorNumeric("viridis", domain = 1:6)
-
-leaflet() |>
-  addTiles() |>
-  setView(lng = kanazawa_eki[1], lat = kanazawa_eki[2],
-          zoom = 16) |>
-  addCircleMarkers(data = evac_data, 
-                   lng = ~`経度`, lat = ~`緯度`,
-                   label = ~`名称`,
-                   color = "green", opacity = 0.5) |>
-  addPolylines(data = evac_routes,
-               color = pal_fun(1:5),
-               weight = 6, opacity = 0.8) |>
-  addLegend(data = evac_routes,
-            colors = pal_fun(1:5),
-            labels = paste0("避難経路", 1:5),
-            opacity = 1,
-            position = "topright")
-```
-
-## 探索された経路をleafletで表示
-
-```{r}
-#| label: leaflet-evac-routes
-#| echo: false
+#| output-location: slide
 
 # カラーパレットの作成関数
 pal_fun <- colorNumeric("viridis", domain = 1:6)
@@ -343,25 +276,9 @@ bb <- st_bbox(c(xmin = lng[1], xmax = lng[2],
 ## tmap.mapglで表示
 
 ```{r}
-#| label: tmap.mapgl-code
-#| message: false
-#| eval: false
-
-library(tmap)
-library(tmap.mapgl)
-
-tmap_mode("maplibre")
-tm_shape(evac_sf, bbox = bb) +
-  tm_maplibre() +
-  tm_symbols(fill = "red", fill_alpha = 0.67)
-```
-
-## tmap.mapglで表示
-
-```{r}
 #| label: tmap.mapgl
 #| message: false
-#| echo: false
+#| output-location: slide
 
 library(tmap)
 library(tmap.mapgl)
@@ -378,20 +295,7 @@ tm_shape(evac_sf, bbox = bb) +
 
 ```{r}
 #| label: tmap.mapgl-3d-code
-#| eval: false
-
-tm_shape(evac_sf, bbox = bb) +
-  tm_maplibre(pitch = 60) +
-  tm_symbols(fill = "red", fill_alpha = 0.67) +
-  tm_shape(evac_routes) +
-  tm_lines(col = "rank", lwd = 5)
-```
-
-## 3D表示
-
-```{r}
-#| label: tmap.mapgl-3d
-#| echo: false
+#| output-location: slide
 
 tm_shape(evac_sf, bbox = bb) +
   tm_maplibre(pitch = 60) +
