@@ -10,3 +10,4 @@ Kanazawa.R #4のプレゼンテーション資料です。
 ## ライトニングトーク
 
 - survival-ggplot2.qmd: ggplot2で 生存時間分析のグラフ作成
+- local_LLM.qmd: RからローカルLLMをつかう
