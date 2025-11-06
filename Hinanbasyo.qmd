@@ -138,7 +138,9 @@ leaflet() |>
 
 ## 金沢駅付近を表示
 
+::: {style="margin-top: 0.5em;"}
 `setView`関数で、経度、緯度、ズームレベルを指定
+:::
 
 ```{r}
 #| label: kanazawa-eki
@@ -171,7 +173,9 @@ leaflet() |>
 
 ## マーカーに説明を追加
 
+::: {style="margin-top: 0.5em;"}
 `popup`引数に、`` ~`名称` ``を指定し、さらに念のため`htmltools::htmlEscape` 関数を通す
+:::
 
 ```{r}
 #| label: add_marker_popups
@@ -187,7 +191,9 @@ leaflet() |>
 
 ## マーカーに説明を追加(2)
 
+::: {style="margin-top: 0.5em;"}
 [`label`]{.underline}引数に、`` ~`名称` ``を指定（`htmltools::htmlEscape` 関数は不要）
+:::
 
 ```{r}
 #| label: add_marker_labels
@@ -216,7 +222,9 @@ tunami_data <- sf::st_read(file.path(data_dir, tunami_file)) |>
 
 ## 津波浸水想定データ
 
+::: {style="margin-top: 0.5em;"}
 データ確認
+:::
 
 ```{r}
 tunami_data
@@ -224,7 +232,9 @@ tunami_data
 
 ## 想定される津波浸水深
 
+::: {style="margin-top: 0.5em;"}
 `A40_003`列が津波浸水深の区分
+:::
 
 ```{r}
 table(tunami_data$A40_003) 
@@ -246,7 +256,9 @@ tunami_data <- tunami_data |>
 
 ## leafletに表示
 
+::: {style="margin-top: 0.5em;"}
 金沢市金石地区付近を表示
+:::
 
 ```{r}
 #| label: leaflet_tunami
@@ -277,7 +289,7 @@ tunami_evac <- evac_data |>
 ## 地図に津波避難場所をマーカーとして追加
 
 ```{r}
-#| label: leaflet_tunami_evac-code
+#| label: leaflet_tunami_evac
 #| output-location: slide
 
 leaflet(tunami_data) |>

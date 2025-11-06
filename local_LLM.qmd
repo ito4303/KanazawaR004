@@ -53,7 +53,9 @@ editor: visual
 
 ## ローカルLLMのダウンロード
 
+::: {style="margin-top: 1em;"}
 例: コマンドラインからgemma3nを取得
+:::
 
 ```{bash}
 #| eval: false
@@ -61,7 +63,9 @@ editor: visual
 ollama pull gemma3n
 ```
 
+::: {style="margin-top: 1em;"}
 Rから[ollamar](https://cran.r-project.org/package=ollamar)パッケージを使う場合
+:::
 
 ```{r}
 #| eval: false
@@ -82,9 +86,11 @@ ollamar::pull("gemma3n")
 install.packages("ellmer")
 ```
 
-## ellmerでOllamaのローカルLLMを使う
+## ellmerからローカルLLMを使う
 
+::: {style="margin-top: 1em;"}
 チャットの設定
+:::
 
 ```{r}
 #| label: ollama-gemma
@@ -104,10 +110,18 @@ chat$chat("Rで分散分析をおこなう関数を教えて")
 
 ## まとめ
 
-ellmer以外で、ローカルLLMを使えるパッケージ
+::: {style="margin-top: 0.5em;"}
+RからローカルLLMを使用する方法
+:::
 
--   [mall](https://cran.r-project.org/package=mall): 文書の要約・分類・翻訳など
+-   Ollama
 
--   [ragnar](https://cloud.r-project.org/package=ragnar): RAG (Retrieval-Augmented Generation)
+    -   別にインストール
 
--   など
+    -   使用するローカルLLMを取得しておく
+
+-   ellmerパッケージ
+
+    -   `chat_ollama`関数を使用
+
+        -   `model`引数に、使用するモデルを指定
