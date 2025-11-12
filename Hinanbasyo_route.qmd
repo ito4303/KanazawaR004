@@ -33,7 +33,7 @@ editor: visual
 
 ## OSRM
 
--   Open Source Routing Machine
+-   **O**pen **S**ource **R**outing **M**achine
 
 -   オープンソースの経路探索システム
 
@@ -41,12 +41,16 @@ editor: visual
 
     -   Docker Hubにあるコンテナイメージ: [osrm/osrm-backend](https://hub.docker.com/r/osrm/osrm-backend/)
 
+-   Rとは別のソフトウェアだが、Rから利用可能
+
 [^1]: アプリケーションと実行環境をまとめて「コンテナ」にして、仮想化して実行するソフトウェア
 
 ## 経路探索データの作成
 
 ::: {style="margin-top: 0.5em;"}
-OpenStreetMapデータのダウンロード（日本の中部地方）
+あらかじめ、経路探索データを作成しておきます
+
+1.  OpenStreetMapデータのダウンロード（日本の中部地方）
 :::
 
 ```{sh}
@@ -57,7 +61,7 @@ OpenStreetMapデータのダウンロード（日本の中部地方）
 wget https://download.geofabrik.de/asia/japan/chubu-latest.osm.pbf
 ```
 
-データの作成
+2.  データの作成（Docker利用、`foot.lua`を指定して徒歩ルートを指定）
 
 ```{sh}
 #| eval: false
@@ -74,6 +78,10 @@ docker run -t -v "${PWD}:/data" osrm/osrm-backend osrm-customize \
 
 ## OSRMサーバーの起動
 
+DockerでOSRMサーバーを起動します[^2]
+
+[^2]: macOSの場合は、OSRMで標準で使用する5000番ポートがAirPlayレシーバーで使われているので、システム設定\>一般\>AirDropとHandoffで、AirPlayレシーバーを切るか、別のポートを使用するようにします。
+
 ```{sh}
 #| eval: false
 #| echo: true
@@ -83,10 +91,6 @@ docker run -t -i -p 5000:5000 -v "${PWD}:/data" \
   osrm/osrm-backend osrm-routed \
   --algorithm mld /data/chubu-latest.osrm
 ```
-
-::: {style="font-size: 60%;"}
-macOSの場合は、OSRMで標準で使用する5000番ポートがAirPlayレシーバーで使われているので、システム設定\>一般\>AirDropとHandoffで、AirPlayレシーバーを切るか、別のポートを使用するようにする。
-:::
 
 ## osrmパッケージ
 
@@ -145,12 +149,13 @@ leaflet() |>
 
 ## 経路探索を実行
 
+`osrmRoute`関数で探索を実行します
+
 ```{r}
 #| label: osrmroute
 #| cache: true
 
-route <- osrmRoute(src = kanazawa_eki, dst = kenrokuen)
-print(route)
+(route <- osrmRoute(src = kanazawa_eki, dst = kenrokuen))
 ```
 
 ## leafletで経路を表示

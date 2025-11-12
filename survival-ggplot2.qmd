@@ -85,12 +85,13 @@ head(aml)
 #| fig-width: 5
 #| fig-height: 3
 
-fit <- survfit(Surv(time = time, event = status) ~ x, data = aml)
+fit <- survfit(Surv(time = time, event = status) ~ x,
+               data = aml)
 par(mai = c(0.5, 0.5, 0.1, 0.1)) # 余白の調整
 plot(fit, mark.time = TRUE, col = c(2, 5), lwd = 2)
 ```
 
-## survmimerパッケージ
+## survminerパッケージ
 
 ```{r}
 #| label: survminer
@@ -103,7 +104,6 @@ ggsurvplot(fit)
 
 ```{r}
 library(jskm)
-
 jskm(fit)
 ```
 
@@ -134,7 +134,8 @@ ggplot(aml, aes(time = time, status = status, color = x)) +
   labs(x = "時間（週）", y = "生存率") +
   scale_color_discrete(name = "維持化学療法",
                        label = c("あり", "なし")) +
-  theme_classic(base_family = "Noto Sans JP", base_size = 21) +
+  theme_classic(base_family = "Noto Sans JP",
+                base_size = 21) +
     theme(legend.position = "inside",
           legend.position.inside = c(0.95, 0.95),
           legend.justification = c("right", "top"),

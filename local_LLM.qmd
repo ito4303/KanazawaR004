@@ -59,8 +59,9 @@ editor: visual
 
 ```{bash}
 #| eval: false
+#| prompt: false
 
-ollama pull gemma3n
+$ ollama pull gemma3n
 ```
 
 ::: {style="margin-top: 1em;"}
