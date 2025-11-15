@@ -27,7 +27,7 @@ editor: visual
 
 -   Rでもできる
 
-    -   Kanazawa.R #3での[NONONOexxeさんの発表](https://www.docswell.com/s/NONONOexe/Z823Q1-kanazawar-3)
+    -   Kanazawa.R #3での[NONONOexeさんの発表](https://www.docswell.com/s/NONONOexe/Z823Q1-kanazawar-3)
         -   [OSRM](https://project-osrm.org)を利用
 :::
 
@@ -96,7 +96,7 @@ docker run -t -i -p 5000:5000 -v "${PWD}:/data" \
 
 -   RからOSRMを利用するためのパッケージ
 
--   CRANから入手可能（[CRAN: Packageosrm](https://cran.r-project.org/package=osrm)）
+-   CRANから入手可能（[CRAN Package](https://cran.r-project.org/package=osrm)[:](https://cran.r-project.org/package=osrm)[osrm](https://cran.r-project.org/package=osrm)）
 
 ```{r}
 #| label: osrm
@@ -279,7 +279,7 @@ leaflet() |>
 #| label: tmap.mapgl-data
 
 evac_sf <- evac_data |>
-  sf::st_as_sf(coords = c("経度", "緯度"), crs = 6668) # JGD2011
+  sf::st_as_sf(coords = c("経度", "緯度"), crs = 4326) # WGS84
 evac_routes <- evac_routes |>
   dplyr::mutate(rank = ordered(rank))
 
