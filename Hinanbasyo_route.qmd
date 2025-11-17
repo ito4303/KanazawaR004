@@ -96,7 +96,7 @@ docker run -t -i -p 5000:5000 -v "${PWD}:/data" \
 
 -   RからOSRMを利用するためのパッケージ
 
--   CRANから入手可能（[CRAN Package](https://cran.r-project.org/package=osrm)[:](https://cran.r-project.org/package=osrm)[osrm](https://cran.r-project.org/package=osrm)）
+-   CRANから入手可能（[CRAN Package:osrm](https://cran.r-project.org/package=osrm)）
 
 ```{r}
 #| label: osrm
